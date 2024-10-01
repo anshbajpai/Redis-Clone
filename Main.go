@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
 )
@@ -22,16 +21,14 @@ func main() {
 	defer connection.Close()
 
 	for {
-		buffer := make([]byte, 1024)
-
-		_, error = connection.Read(buffer)
+		resp := NewResp(connection)
+		value, err := resp.Read()
 		if error != nil {
-			if error == io.EOF {
-				break
-			}
-			fmt.Println("Reading error from client: ", error.Error())
+			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		fmt.Println(value)
 
 		connection.Write([]byte("+PONG OK\r\n"))
 	}
