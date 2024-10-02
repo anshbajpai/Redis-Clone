@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 )
 
 func main() {
@@ -23,13 +22,14 @@ func main() {
 	for {
 		resp := NewResp(connection)
 		value, err := resp.Read()
-		if error != nil {
+		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return
 		}
 
-		fmt.Println(value)
+		_ = value
 
-		connection.Write([]byte("+PONG OK\r\n"))
+		writer := NewWriter(connection)
+		writer.Write(Value{typ: "string", str: "OK"})
 	}
 }

@@ -125,3 +125,90 @@ func (resp *Resp) readBulk() (Value, error) {
 
 	return result, nil
 }
+
+func (v Value) Convert() []byte {
+	var convertFunc func() []byte
+
+	switch v.typ {
+	case "array":
+		convertFunc = v.convertArray
+	case "bulk":
+		convertFunc = v.convertBulk
+	case "string":
+		convertFunc = v.convertString
+	case "null":
+		convertFunc = v.convertNull
+	case "error":
+		convertFunc = v.convertError
+	default:
+		return []byte{}
+	}
+
+	return convertFunc()
+}
+
+func (v Value) convertString() []byte {
+	var bytes []byte
+	bytes = append(bytes, STRING)
+	bytes = append(bytes, v.str...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (v Value) convertBulk() []byte {
+	var bytes []byte
+	bytes = append(bytes, BULK)
+	bytes = append(bytes, strconv.Itoa(len(v.bulk))...)
+	bytes = append(bytes, '\r', '\n')
+	bytes = append(bytes, v.bulk...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (v Value) convertArray() []byte {
+	len := len(v.array)
+	var bytes []byte
+	bytes = append(bytes, ARRAY)
+	bytes = append(bytes, strconv.Itoa(len)...)
+	bytes = append(bytes, '\r', '\n')
+
+	for i := 0; i < len; i++ {
+		bytes = append(bytes, v.array[i].Convert()...)
+	}
+
+	return bytes
+}
+
+func (v Value) convertError() []byte {
+	var bytes []byte
+	bytes = append(bytes, ERROR)
+	bytes = append(bytes, v.str...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes
+}
+
+func (v Value) convertNull() []byte {
+	return []byte("$-1\r\n")
+}
+
+type Writer struct {
+	writer io.Writer
+}
+
+func NewWriter(w io.Writer) *Writer {
+	return &Writer{writer: w}
+}
+
+func (w *Writer) Write(v Value) error {
+	var bytes = v.Convert()
+
+	_, err := w.writer.Write(bytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
