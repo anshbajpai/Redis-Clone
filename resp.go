@@ -48,9 +48,11 @@ func (resp *Resp) readLine() (content []byte, bytesRead int, err error) {
 
 func (resp *Resp) readInteger() (number int, bytesRead int, err error) {
 	lineContent, bytesRead, err := resp.readLine()
+
 	if err != nil {
 		return 0, 0, err
 	}
+
 	parsedInt64, err := strconv.ParseInt(string(lineContent), 10, 64)
 	if err != nil {
 		return 0, bytesRead, err
